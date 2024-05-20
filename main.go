@@ -553,7 +553,7 @@ func drawBouncingLogo() {
 
 func introQuit() {
 	// Enable blending mode
-	renderer.SetDrawBlendMode(sdl.BLENDMODE_MOD)
+	renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
 
 	// Fade out the music and quit
 	for i := 0; i <= 255; i++ {
