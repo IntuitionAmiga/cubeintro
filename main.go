@@ -98,7 +98,6 @@ var (
 	posY, targetY           int
 
 	// Copper bar variables
-	barSpeed    = 4
 	barOffsets  = make([]int, numBars)
 	barTextures []*sdl.Texture
 
@@ -266,7 +265,7 @@ func updateZoomLevel() {
 		if zoomFactor > targetZoom {
 			zoomFactor = targetZoom
 			if !zoomReversed {
-				targetZoom = 0.1
+				targetZoom = 0.2
 				zoomReversed = true
 			}
 		}
@@ -473,7 +472,7 @@ func initSDL() error {
 	return nil
 }
 func setupDisplay() {
-	window, renderer, err = sdl.CreateWindowAndRenderer(windowWidth, windowHeight, sdl.WINDOW_SHOWN)
+	window, renderer, err = sdl.CreateWindowAndRenderer(windowWidth, windowHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_BORDERLESS)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create window and renderer: %s\n", err)
 		os.Exit(1)
