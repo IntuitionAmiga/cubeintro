@@ -107,32 +107,61 @@ var (
 )
 
 func main() {
-	initSDL()
+	err := initSDL()
+	if err != nil {
+		return
+	}
 	defer sdl.Quit()
 	defer img.Quit()
 	defer mix.Quit()
 
 	fmt.Println("Cubetro by Intuition (2024)")
 	setupDisplay()
-	defer window.Destroy()
-	defer renderer.Destroy()
+	defer func(window *sdl.Window) {
+		err := window.Destroy()
+		if err != nil {
+
+		}
+	}(window)
+	defer func(renderer *sdl.Renderer) {
+		err := renderer.Destroy()
+		if err != nil {
+
+		}
+	}(renderer)
 
 	// Hide the mouse cursor
-	sdl.ShowCursor(sdl.DISABLE)
+	_, err = sdl.ShowCursor(sdl.DISABLE)
+	if err != nil {
+		return
+	}
 
 	initStars()
 	playMusic()
 
 	if err := setupFont(); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to setup font: %s\n", err)
+		_, err := fmt.Fprintf(os.Stderr, "Failed to setup font: %s\n", err)
+		if err != nil {
+			return
+		}
 		os.Exit(1)
 	}
-	defer fontTexture.Destroy()
+	defer func(fontTexture *sdl.Texture) {
+		err := fontTexture.Destroy()
+		if err != nil {
+
+		}
+	}(fontTexture)
 
 	if err := setupBouncingLogo(); err != nil {
 		log.Fatalf("Failed to setup bouncing logo: %s", err)
 	}
-	defer texture.Destroy()
+	defer func(texture *sdl.Texture) {
+		err := texture.Destroy()
+		if err != nil {
+
+		}
+	}(texture)
 
 	// Pre-render the copper bars into textures
 	createBarTextures()
@@ -143,8 +172,14 @@ func main() {
 		handleEvents()
 		updateZoomLevel() // Zoom in/out
 
-		renderer.SetDrawColor(0, 0, 0, 255)
-		renderer.Clear()
+		err := renderer.SetDrawColor(0, 0, 0, 255)
+		if err != nil {
+			return
+		}
+		err = renderer.Clear()
+		if err != nil {
+			return
+		}
 
 		drawStarfield()
 
@@ -223,7 +258,10 @@ func fillPolygon(renderer *sdl.Renderer, points []sdl.Point, indices []int) {
 				if intersections[i] > intersections[i+1] {
 					intersections[i], intersections[i+1] = intersections[i+1], intersections[i]
 				}
-				renderer.DrawLine(intersections[i], y, intersections[i+1], y)
+				err := renderer.DrawLine(intersections[i], y, intersections[i+1], y)
+				if err != nil {
+					return
+				}
 			}
 		}
 	}
@@ -242,16 +280,25 @@ func drawCube(angle float64) {
 
 	for i, face := range cubeFaces {
 		if faceColors[i][3] > 0 { // Only draw non-transparent faces
-			renderer.SetDrawColor(faceColors[i][0], faceColors[i][1], faceColors[i][2], faceColors[i][3])
+			err := renderer.SetDrawColor(faceColors[i][0], faceColors[i][1], faceColors[i][2], faceColors[i][3])
+			if err != nil {
+				return
+			}
 			fillPolygon(renderer, projectedPoints, face)
 		}
 	}
 
-	renderer.SetDrawColor(255, 255, 255, 255)
+	err := renderer.SetDrawColor(255, 255, 255, 255)
+	if err != nil {
+		return
+	}
 	for _, edge := range cubeEdges {
 		start := projectedPoints[edge.start]
 		end := projectedPoints[edge.end]
-		renderer.DrawLine(start.X, start.Y, end.X, end.Y)
+		err := renderer.DrawLine(start.X, start.Y, end.X, end.Y)
+		if err != nil {
+			return
+		}
 	}
 }
 func rotateCube() {
@@ -313,15 +360,27 @@ func drawStarfield() {
 
 		for j := len(stars[i].trail) - 1; j > 0; j-- {
 			alpha := uint8(255 * float64(j) / float64(len(stars[i].trail)))
-			renderer.SetDrawColor(alpha, alpha, alpha, alpha)
-			renderer.DrawLine(
+			err := renderer.SetDrawColor(alpha, alpha, alpha, alpha)
+			if err != nil {
+				return
+			}
+			err = renderer.DrawLine(
 				int32(stars[i].trail[j-1].x)+windowWidth/2, int32(stars[i].trail[j-1].y)+windowHeight/2,
 				int32(stars[i].trail[j].x)+windowWidth/2, int32(stars[i].trail[j].y)+windowHeight/2,
 			)
+			if err != nil {
+				return
+			}
 		}
 
-		renderer.SetDrawColor(255, 255, 255, 255)
-		renderer.DrawPoint(int32(x)+windowWidth/2, int32(y)+windowHeight/2)
+		err := renderer.SetDrawColor(255, 255, 255, 255)
+		if err != nil {
+			return
+		}
+		err = renderer.DrawPoint(int32(x)+windowWidth/2, int32(y)+windowHeight/2)
+		if err != nil {
+			return
+		}
 	}
 }
 
@@ -332,7 +391,10 @@ func createBarTextures() {
 			log.Fatalf("Failed to create texture: %s", err)
 		}
 
-		renderer.SetRenderTarget(texture)
+		err = renderer.SetRenderTarget(texture)
+		if err != nil {
+			return
+		}
 		for y := 0; y < barHeight; y++ {
 			ratio := math.Abs(float64(y-barHeight/2) / float64(barHeight/2))
 			var r, g, b uint8
@@ -351,10 +413,19 @@ func createBarTextures() {
 				b = uint8(255 * (1 - ratio))
 			}
 
-			renderer.SetDrawColor(r, g, b, 255)
-			renderer.DrawLine(0, int32(y), windowWidth, int32(y))
+			err := renderer.SetDrawColor(r, g, b, 255)
+			if err != nil {
+				return
+			}
+			err = renderer.DrawLine(0, int32(y), windowWidth, int32(y))
+			if err != nil {
+				return
+			}
 		}
-		renderer.SetRenderTarget(nil)
+		err = renderer.SetRenderTarget(nil)
+		if err != nil {
+			return
+		}
 		barTextures = append(barTextures, texture)
 	}
 
@@ -373,7 +444,10 @@ func drawCopperBars(elapsedTime float64) {
 		dstRect := sdl.Rect{X: 0, Y: baseY + int32(offsetY), W: windowWidth, H: barHeight}
 
 		// Render the bar
-		renderer.Copy(barTextures[i], nil, &dstRect)
+		err := renderer.Copy(barTextures[i], nil, &dstRect)
+		if err != nil {
+			return
+		}
 	}
 }
 
@@ -416,12 +490,18 @@ func drawScrollText(text string, posX float64) {
 
 			// Draw the original text
 			dstRect := sdl.Rect{X: x, Y: windowHeight/2 + offsetY, W: displayWidth, H: displayHeight}
-			renderer.Copy(fontTexture, &srcRect, &dstRect)
+			err := renderer.Copy(fontTexture, &srcRect, &dstRect)
+			if err != nil {
+				return
+			}
 
 			// Draw the mirrored text
 			mirroredOffsetY := int32(-20 * math.Sin(float64(x)/100))
 			mirroredDstRect := sdl.Rect{X: x, Y: windowHeight/2 + displayHeight + mirroredOffsetY, W: displayWidth, H: displayHeight}
-			renderer.CopyEx(fontTexture, &srcRect, &mirroredDstRect, 0, nil, sdl.FLIP_VERTICAL)
+			err = renderer.CopyEx(fontTexture, &srcRect, &mirroredDstRect, 0, nil, sdl.FLIP_VERTICAL)
+			if err != nil {
+				return
+			}
 		}
 	}
 }
@@ -474,7 +554,10 @@ func initSDL() error {
 func setupDisplay() {
 	window, renderer, err = sdl.CreateWindowAndRenderer(windowWidth, windowHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_BORDERLESS)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create window and renderer: %s\n", err)
+		_, err := fmt.Fprintf(os.Stderr, "Failed to create window and renderer: %s\n", err)
+		if err != nil {
+			return
+		}
 		os.Exit(1)
 	}
 }
@@ -547,12 +630,18 @@ func drawBouncingLogo() {
 		W: imageWidth,
 		H: imageHeight,
 	}
-	renderer.Copy(texture, nil, &dstRect)
+	err := renderer.Copy(texture, nil, &dstRect)
+	if err != nil {
+		return
+	}
 }
 
 func introQuit() {
 	// Enable blending mode
-	renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
+	err := renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
+	if err != nil {
+		return
+	}
 
 	// Fade out the music and quit
 	for i := 0; i <= 255; i++ {
@@ -564,8 +653,14 @@ func introQuit() {
 		updateScrollTextPosition()
 
 		// Draw the current screen content
-		renderer.SetDrawColor(0, 0, 0, 255)
-		renderer.Clear()
+		err := renderer.SetDrawColor(0, 0, 0, 255)
+		if err != nil {
+			return
+		}
+		err = renderer.Clear()
+		if err != nil {
+			return
+		}
 
 		// Draw the existing scene
 		drawStarfield()
@@ -573,8 +668,14 @@ func introQuit() {
 		drawScrollText(scrollText, scrollPosX)
 
 		// Draw a full screen semi-transparent rectangle
-		renderer.SetDrawColor(0, 0, 0, uint8(i))
-		renderer.FillRect(&sdl.Rect{X: 0, Y: 0, W: windowWidth, H: windowHeight})
+		err = renderer.SetDrawColor(0, 0, 0, uint8(i))
+		if err != nil {
+			return
+		}
+		err = renderer.FillRect(&sdl.Rect{X: 0, Y: 0, W: windowWidth, H: windowHeight})
+		if err != nil {
+			return
+		}
 
 		// Present the renderer
 		renderer.Present()
