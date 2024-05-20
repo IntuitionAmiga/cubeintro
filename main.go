@@ -5,6 +5,7 @@ import (
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/mix"
 	"github.com/veandco/go-sdl2/sdl"
+	"log"
 	"math"
 	"math/rand"
 	"os"
@@ -22,6 +23,7 @@ const (
 	fontHeight    = 32
 	displayWidth  = 64
 	displayHeight = 64
+	imagePath     = "intuitiontextlogo.png"
 )
 
 type Point3D struct {
@@ -87,8 +89,14 @@ var (
 		'R': {0, 5}, 'S': {1, 5}, 'T': {2, 5}, 'U': {3, 5}, 'V': {4, 5}, 'W': {5, 5}, 'X': {6, 5}, 'Y': {7, 5}, 'Z': {8, 5}, '`': {9, 5},
 	}
 
+	// Bouncing logo variables
+	texture                 *sdl.Texture
+	imageWidth, imageHeight int32
+	posY, targetY           int
+
 	// Loop control
-	running = true
+	running   = true
+	startTime = time.Now()
 )
 
 func main() {
@@ -114,7 +122,13 @@ func main() {
 	}
 	defer fontTexture.Destroy()
 
+	if err := setupBouncingLogo(); err != nil {
+		log.Fatalf("Failed to setup bouncing logo: %s", err)
+	}
+	defer texture.Destroy()
+
 	// Main loop
+	startTime = time.Now()
 	for running {
 		handleEvents()
 		updateZoomLevel() // Zoom in/out
@@ -129,6 +143,9 @@ func main() {
 
 		drawScrollText(scrollText, scrollPosX)
 		updateScrollTextPosition()
+
+		updateBouncingLogoPosition()
+		drawBouncingLogo()
 
 		renderer.Present()
 		sdl.Delay(1000 / FPS)
@@ -400,9 +417,73 @@ func playMusic() {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to load music from disk: %s\n", errLoadingMusic)
 		os.Exit(1)
 	} else {
-		_ = music.Play(1)
+		_ = music.Play(-1)
 	}
 }
+
+func loadTexture(file string, renderer *sdl.Renderer) (*sdl.Texture, error) {
+	imgSurface, err := img.Load(file)
+	if err != nil {
+		return nil, fmt.Errorf("could not load image: %v", err)
+	}
+	defer imgSurface.Free()
+
+	// Set color key to make black transparent
+	if err := imgSurface.SetColorKey(true, sdl.MapRGB(imgSurface.Format, 0, 0, 0)); err != nil {
+		return nil, fmt.Errorf("could not set color key: %v", err)
+	}
+
+	texture, err := renderer.CreateTextureFromSurface(imgSurface)
+	if err != nil {
+		return nil, fmt.Errorf("could not create texture: %v", err)
+	}
+
+	return texture, nil
+}
+func setupBouncingLogo() error {
+	var err error
+	texture, err = loadTexture(imagePath, renderer)
+	if err != nil {
+		return err
+	}
+
+	// Get the dimensions of the texture
+	_, _, imageWidth, imageHeight, err = texture.Query()
+	if err != nil {
+		return err
+	}
+
+	// Initial position and target position
+	posY = -int(imageHeight)
+	targetY = (windowHeight - int(imageHeight)) / 2
+
+	return nil
+}
+func updateBouncingLogoPosition() {
+	// Calculate the elapsed time
+	elapsed := time.Since(startTime).Seconds()
+
+	// Animate the position of the image
+	if posY < targetY {
+		posY += int(float64(imageHeight) * elapsed * 0.05) // Adjust logo sliding speed
+		if posY > targetY {
+			posY = targetY
+		}
+	} else {
+		posY = targetY + int(4*math.Sin(elapsed*20)) // Adjust bounce here
+	}
+}
+func drawBouncingLogo() {
+	// Draw the image
+	dstRect := sdl.Rect{
+		X: (windowWidth - imageWidth) / 2,
+		Y: int32(posY),
+		W: imageWidth,
+		H: imageHeight,
+	}
+	renderer.Copy(texture, nil, &dstRect)
+}
+
 func introQuit() {
 	// Enable blending mode
 	renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND)

@@ -12,6 +12,8 @@ A dual sine wave mirrored scrolltext.
 
 A protracker chiptune.
 
+A bouncing logo for the glories!!!111EleventyOne!!
+
 
 
 Requirements:
