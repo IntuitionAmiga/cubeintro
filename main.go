@@ -550,12 +550,29 @@ func setupDisplay() {
 		os.Exit(1)
 	}
 }
+func loadModFromBytes(data []byte) (*mix.Music, error) {
+	rwops, err := sdl.RWFromMem(data)
+	if err != nil {
+		return nil, fmt.Errorf("could not create RWops from bytes: %v", err)
+	}
+
+	music, err := mix.LoadMUSRW(rwops, 0)
+	if err != nil {
+		return nil, fmt.Errorf("could not load MOD from RWops: %v", err)
+	}
+
+	return music, nil
+}
 func playMusic() {
-	if music, errLoadingMusic := mix.LoadMUS("comicbakery3.mod"); errLoadingMusic != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Failed to load music from disk: %s\n", errLoadingMusic)
+	music, err := loadModFromBytes(comicbakeryMod)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to load music: %s\n", err)
 		os.Exit(1)
-	} else {
-		_ = music.Play(-1)
+	}
+
+	if err := music.Play(-1); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to play music: %s\n", err)
+		os.Exit(1)
 	}
 }
 
