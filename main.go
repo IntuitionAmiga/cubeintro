@@ -23,7 +23,6 @@ const (
 	fontHeight    = 32
 	displayWidth  = 64
 	displayHeight = 64
-	imagePath     = "intuitiontextlogo.png"
 	numBars       = 5
 	barHeight     = 60
 )
@@ -570,10 +569,14 @@ func playMusic() {
 	}
 }
 
-func loadTexture(file string, renderer *sdl.Renderer) (*sdl.Texture, error) {
-	imgSurface, err := img.Load(file)
+func loadTextureFromBytes(data []byte, renderer *sdl.Renderer) (*sdl.Texture, error) {
+	rwops, err := sdl.RWFromMem(data)
 	if err != nil {
-		return nil, fmt.Errorf("could not load image: %v", err)
+		return nil, fmt.Errorf("could not create RWops from bytes: %v", err)
+	}
+	imgSurface, err := img.LoadPNGRW(rwops)
+	if err != nil {
+		return nil, fmt.Errorf("could not load image from RWops: %v", err)
 	}
 	defer imgSurface.Free()
 
@@ -591,7 +594,7 @@ func loadTexture(file string, renderer *sdl.Renderer) (*sdl.Texture, error) {
 }
 func setupBouncingLogo() error {
 	var err error
-	texture, err = loadTexture(imagePath, renderer)
+	texture, err = loadTextureFromBytes(intuitiontextlogoPng, renderer)
 	if err != nil {
 		return err
 	}
@@ -608,6 +611,7 @@ func setupBouncingLogo() error {
 
 	return nil
 }
+
 func updateBouncingLogoPosition() {
 	// Calculate the elapsed time
 	elapsed := time.Since(startTime).Seconds()
