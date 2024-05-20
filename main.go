@@ -24,6 +24,8 @@ const (
 	displayWidth  = 64
 	displayHeight = 64
 	imagePath     = "intuitiontextlogo.png"
+	numBars       = 5
+	barHeight     = 60
 )
 
 type Point3D struct {
@@ -46,6 +48,7 @@ var (
 	zoomFactor    = 0.1
 	targetZoom    = 0.6
 	zoomStep      = 0.002
+	zoomReversed  = false
 	rotationAngle = 0.0
 	cubeVertices  = []Point3D{
 		{1, 1, -1}, {1, -1, -1}, {-1, -1, -1}, {-1, 1, -1},
@@ -94,6 +97,11 @@ var (
 	imageWidth, imageHeight int32
 	posY, targetY           int
 
+	// Copper bar variables
+	barSpeed    = 4
+	barOffsets  = make([]int, numBars)
+	barTextures []*sdl.Texture
+
 	// Loop control
 	running   = true
 	startTime = time.Now()
@@ -127,6 +135,9 @@ func main() {
 	}
 	defer texture.Destroy()
 
+	// Pre-render the copper bars into textures
+	createBarTextures()
+
 	// Main loop
 	startTime = time.Now()
 	for running {
@@ -138,6 +149,7 @@ func main() {
 
 		drawStarfield()
 
+		drawCopperBars(time.Since(startTime).Seconds())
 		drawCube(rotationAngle)
 		rotateCube()
 
@@ -253,6 +265,10 @@ func updateZoomLevel() {
 		zoomFactor += zoomStep
 		if zoomFactor > targetZoom {
 			zoomFactor = targetZoom
+			if !zoomReversed {
+				targetZoom = 0.1
+				zoomReversed = true
+			}
 		}
 	} else if zoomFactor > targetZoom {
 		zoomFactor -= zoomStep
@@ -261,7 +277,6 @@ func updateZoomLevel() {
 		}
 	}
 }
-
 func initStars() {
 	// Initialize stars
 	rand.Seed(time.Now().UnixNano())
@@ -308,6 +323,58 @@ func drawStarfield() {
 
 		renderer.SetDrawColor(255, 255, 255, 255)
 		renderer.DrawPoint(int32(x)+windowWidth/2, int32(y)+windowHeight/2)
+	}
+}
+
+func createBarTextures() {
+	for i := 0; i < numBars; i++ {
+		texture, err := renderer.CreateTexture(sdl.PIXELFORMAT_RGBA8888, sdl.TEXTUREACCESS_TARGET, windowWidth, barHeight)
+		if err != nil {
+			log.Fatalf("Failed to create texture: %s", err)
+		}
+
+		renderer.SetRenderTarget(texture)
+		for y := 0; y < barHeight; y++ {
+			ratio := math.Abs(float64(y-barHeight/2) / float64(barHeight/2))
+			var r, g, b uint8
+			switch i % 3 {
+			case 0:
+				r = uint8(255 * (1 - ratio))
+				g = 0
+				b = 0
+			case 1:
+				r = 0
+				g = uint8(255 * (1 - ratio))
+				b = 0
+			case 2:
+				r = 0
+				g = 0
+				b = uint8(255 * (1 - ratio))
+			}
+
+			renderer.SetDrawColor(r, g, b, 255)
+			renderer.DrawLine(0, int32(y), windowWidth, int32(y))
+		}
+		renderer.SetRenderTarget(nil)
+		barTextures = append(barTextures, texture)
+	}
+
+	for i := 0; i < numBars; i++ {
+		barOffsets[i] = i * (windowHeight / numBars)
+	}
+}
+func drawCopperBars(elapsedTime float64) {
+	for i := 0; i < numBars; i++ {
+		// Calculate the new y position based on the sine function
+		amplitude := float64(barHeight)
+		frequency := 2.0
+		baseY := (windowHeight / 2) + int32(i*barHeight/2)
+		offsetY := amplitude * math.Sin(frequency*elapsedTime+float64(i)*0.4)
+
+		dstRect := sdl.Rect{X: 0, Y: baseY + int32(offsetY), W: windowWidth, H: barHeight}
+
+		// Render the bar
+		renderer.Copy(barTextures[i], nil, &dstRect)
 	}
 }
 
@@ -455,7 +522,7 @@ func setupBouncingLogo() error {
 
 	// Initial position and target position
 	posY = -int(imageHeight)
-	targetY = (windowHeight - int(imageHeight)) / 2
+	targetY = (windowHeight - int(imageHeight)) / 7
 
 	return nil
 }
@@ -486,7 +553,7 @@ func drawBouncingLogo() {
 
 func introQuit() {
 	// Enable blending mode
-	renderer.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
+	renderer.SetDrawBlendMode(sdl.BLENDMODE_MOD)
 
 	// Fade out the music and quit
 	for i := 0; i <= 255; i++ {

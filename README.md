@@ -4,15 +4,17 @@ Got bored and made an oldskool crack intro.
 
 Features:
 
-A 3D starfield with faded trails.
+1. A 3D starfield with faded trails.
 
-A keyboard zoomable rotating cube.
+2. A keyboard zoomable rotating cube.
 
-A dual sine wave mirrored scrolltext.
+3. A dual sine wave mirrored scrolltext.
 
-A protracker chiptune.
+4. A protracker chiptune.
 
-A bouncing logo for the glories!!!111EleventyOne!!
+5. A bouncing logo for the glories!!!111EleventyOne!!
+
+6. YPos scrolling Amiga copper bars.
 
 
 
