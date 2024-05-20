@@ -451,23 +451,13 @@ func drawCopperBars(elapsedTime float64) {
 }
 
 func setupFont() error {
-	fontSurface, err := img.Load("32X32-FM.png")
+	fontTexture, err = loadTextureFromBytes(fontPng, renderer)
 	if err != nil {
-		return err
-	}
-	defer fontSurface.Free()
-
-	// Set color key to make black transparent
-	if err := fontSurface.SetColorKey(true, sdl.MapRGB(fontSurface.Format, 0, 0, 0)); err != nil {
-		return err
-	}
-
-	fontTexture, err = renderer.CreateTextureFromSurface(fontSurface)
-	if err != nil {
-		return err
+		return fmt.Errorf("failed to load font texture: %v", err)
 	}
 	return nil
 }
+
 func drawScrollText(text string, posX float64) {
 	textLength := len(text)
 	totalTextWidth := textLength * displayWidth
