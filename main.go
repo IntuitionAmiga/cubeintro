@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -80,7 +81,7 @@ var (
 	stars []Star
 
 	// Scrolltext variables
-	scrollText  = "..:INTUITION PRESENTS:..    \"I FEEL 16 AGAIN!\"    ..:PRESS THE UP AND DOWN KEYS TO ZOOM THE CUBE IN AND OUT:..    ..:PRESS Q OR ESC TO QUIT:..    ..:ORIGINAL COMIC BAKERY MUSIC FOR C64 BY MARTIN GALWAY IN 1984...     ..:SID TO PROTRACKER CONVERSION FOR AMIGA BY H0FFMAN (DREAMFISH/TRSI) IN 1994:..    ..:GOLANG CODE BY INTUITION IN 2024:..    ..:FONT GRAPHICS BY UNKNOWN:..    ..:GREETS TO KARLOS AND GADGETMASTER!!!:..          "
+	scrollText  = "..:INTUITION PRESENTS:..    \"I FEEL 16 AGAIN!\"    ..:PRESS THE UP AND DOWN KEYS TO ZOOM THE CUBE IN AND OUT:..    ..:\"-WIN\" ARGUMENT ON COMMANDLINE TO RUN IN WINDOWED MODE:..    ..:\"-WIN WIDTH HEIGHT\" TO SET WINDOW SIZE:..    ..:PRESS Q OR ESC TO QUIT:..    ..:ORIGINAL COMIC BAKERY MUSIC FOR C64 BY MARTIN GALWAY IN 1984...     ..:SID TO PROTRACKER CONVERSION FOR AMIGA BY H0FFMAN (DREAMFISH OF TRSI) IN 1994:..    ..:GOLANG CODE BY INTUITION IN 2024:..    ..:FONT GRAPHICS BY UNKNOWN:..    ..:GREETS TO KARLOS AND GADGETMASTER!!!:..          "
 	scrollPosX  = float64(windowWidth)
 	fontTexture *sdl.Texture
 	charMap     = map[rune][2]int{
@@ -116,7 +117,9 @@ func main() {
 	defer img.Quit()
 	defer mix.Quit()
 
-	fmt.Println("Cubetro by Intuition (2024)")
+	fmt.Println("Cubetro by Intuition (2024)\n")
+	fmt.Println("\"-win\" argument on commandline to run in windowed mode")
+	fmt.Println("\"-win width height\" to set window size (default 1024x768)\n")
 	setupDisplay()
 	defer func(window *sdl.Window) {
 		err := window.Destroy()
@@ -527,9 +530,22 @@ func handleEvents() {
 }
 func parseCommandLineArgs() {
 	fullscreen = true // Default to fullscreen
-	for _, arg := range os.Args[1:] {
+	for i, arg := range os.Args[1:] {
 		if arg == "-win" {
 			fullscreen = false
+			// Check if custom width and height are provided
+			if len(os.Args) > i+3 {
+				if w, err := strconv.Atoi(os.Args[i+2]); err == nil {
+					windowWidth = int32(w)
+				}
+				if h, err := strconv.Atoi(os.Args[i+3]); err == nil {
+					windowHeight = int32(h)
+				}
+			} else {
+				windowWidth = 1024
+				windowHeight = 768
+			}
+			break
 		}
 	}
 }
@@ -565,8 +581,6 @@ func setupDisplay() {
 		windowHeight = dm.H
 	} else {
 		flags |= sdl.WINDOW_BORDERLESS
-		windowWidth = 1024
-		windowHeight = 768
 	}
 
 	window, renderer, err = sdl.CreateWindowAndRenderer(windowWidth, windowHeight, flags)

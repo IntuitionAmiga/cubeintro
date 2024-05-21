@@ -16,6 +16,10 @@ Features:
 
 6. YPos scrolling Amiga copper bars.
 
+7. "-win" argument on commandline to run in windowed mode.
+
+8. "-win width height" to set window size (default 1024x768).
+
 
 
 Requirements:
