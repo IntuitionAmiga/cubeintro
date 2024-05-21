@@ -526,14 +526,14 @@ func handleEvents() {
 	}
 }
 func parseCommandLineArgs() {
+	fullscreen = true // Default to fullscreen
 	for _, arg := range os.Args[1:] {
-		if arg == "-fullscreen" {
-			fullscreen = true
-		} else if arg == "-windowed" {
+		if arg == "-win" {
 			fullscreen = false
 		}
 	}
 }
+
 func initSDL() error {
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		return err
@@ -554,7 +554,7 @@ func initSDL() error {
 }
 
 func setupDisplay() {
-	var flags uint32 = sdl.WINDOW_SHOWN | sdl.WINDOW_BORDERLESS
+	var flags uint32 = sdl.WINDOW_SHOWN
 	if fullscreen {
 		flags |= sdl.WINDOW_FULLSCREEN_DESKTOP
 		dm, err := sdl.GetCurrentDisplayMode(0)
@@ -564,11 +564,12 @@ func setupDisplay() {
 		windowWidth = dm.W
 		windowHeight = dm.H
 	} else {
+		flags |= sdl.WINDOW_BORDERLESS
 		windowWidth = 1024
 		windowHeight = 768
 	}
 
-	window, renderer, err = sdl.CreateWindowAndRenderer(int32(int(windowWidth)), int32(int(windowHeight)), flags)
+	window, renderer, err = sdl.CreateWindowAndRenderer(windowWidth, windowHeight, flags)
 	if err != nil {
 		_, err := fmt.Fprintf(os.Stderr, "Failed to create window and renderer: %s\n", err)
 		if err != nil {
