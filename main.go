@@ -140,6 +140,7 @@ func main() {
 		return
 	}
 
+	drawDecrunchEffect(1 * time.Second)
 	initStars()
 	playMusic()
 
@@ -199,6 +200,44 @@ func main() {
 
 		renderer.Present()
 		sdl.Delay(1000 / FPS)
+	}
+}
+
+func drawDecrunchEffect(duration time.Duration) {
+	startTime := time.Now()
+	speed := int32(20)
+	barThickness := int32(10) // Adjust this value to change the thickness of the bars
+
+	colors := [][3]uint8{
+		{0, 0, 0}, {255, 255, 255}, {136, 0, 0}, {170, 255, 238},
+		{204, 68, 204}, {0, 204, 85}, {0, 0, 170}, {238, 238, 119},
+		{221, 136, 85}, {102, 68, 0}, {255, 119, 119}, {51, 51, 51},
+		{119, 119, 119}, {170, 255, 102}, {0, 136, 255}, {187, 187, 187},
+		{0, 0, 0}, {255, 255, 255}, {136, 0, 0}, {170, 255, 238},
+		{204, 68, 204}, {0, 204, 85}, {0, 0, 170}, {238, 238, 119},
+		{221, 136, 85}, {102, 68, 0}, {255, 119, 119}, {51, 51, 51},
+		{119, 119, 119}, {170, 255, 102}, {0, 136, 255}, {187, 187, 187},
+	}
+
+	for time.Since(startTime) < duration {
+		t := int32(time.Since(startTime).Milliseconds() / int64(speed))
+		for y := int32(0); y < windowHeight; y += barThickness {
+			colorIndex := (y + t) % int32(len(colors))
+			color := colors[colorIndex]
+
+			err := renderer.SetDrawColor(color[0], color[1], color[2], 255)
+			if err != nil {
+				return
+			}
+			for i := int32(0); i < barThickness; i++ {
+				err := renderer.DrawLine(0, y+i, windowWidth, y+i)
+				if err != nil {
+					return
+				}
+			}
+		}
+		renderer.Present()
+		sdl.Delay(16) // Limit frame rate to about 60 FPS
 	}
 }
 

@@ -20,6 +20,8 @@ Features:
 
 8. "-win width height" to set window size (default 1024x768).
 
+9. Amiga style graphical decruncher loader 
+
 
 
 Requirements:
