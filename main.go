@@ -140,7 +140,9 @@ func main() {
 		return
 	}
 
-	drawDecrunchEffect(1 * time.Second)
+	displayKick13Image(2 * time.Second)
+	playFloppySound()
+	drawDecrunchEffect(2 * time.Second)
 	initStars()
 	playMusic()
 
@@ -203,12 +205,129 @@ func main() {
 	}
 }
 
+func loadKick13Texture(renderer *sdl.Renderer) (*sdl.Texture, error) {
+	rwops, err := sdl.RWFromMem(kick13)
+	if err != nil {
+		return nil, fmt.Errorf("could not create RWops from bytes: %v", err)
+	}
+	imgSurface, err := img.LoadPNGRW(rwops)
+	if err != nil {
+		return nil, fmt.Errorf("could not load image from RWops: %v", err)
+	}
+	defer imgSurface.Free()
+
+	texture, err := renderer.CreateTextureFromSurface(imgSurface)
+	if err != nil {
+		return nil, fmt.Errorf("could not create texture: %v", err)
+	}
+
+	return texture, nil
+}
+func displayKick13Image(duration time.Duration) {
+	texture, err := loadKick13Texture(renderer)
+	if err != nil {
+		log.Fatalf("Failed to load kick13 image: %s", err)
+	}
+	defer func(texture *sdl.Texture) {
+		err := texture.Destroy()
+		if err != nil {
+
+		}
+	}(texture)
+
+	startTime := time.Now()
+	for time.Since(startTime) < duration {
+		err := renderer.SetDrawColor(0, 0, 0, 255)
+		if err != nil {
+			return
+		}
+		err = renderer.Clear()
+		if err != nil {
+			return
+		}
+
+		dstRect := sdl.Rect{X: 0, Y: 0, W: windowWidth, H: windowHeight}
+		err = renderer.Copy(texture, nil, &dstRect)
+		if err != nil {
+			return
+		}
+		renderer.Present()
+		sdl.Delay(16) // Limit frame rate to about 60 FPS
+	}
+	// Turn the entire screen white
+	err = renderer.SetDrawColor(255, 255, 255, 255)
+	if err != nil {
+		return
+	}
+	err = renderer.Clear()
+	if err != nil {
+		return
+	}
+	renderer.Present()
+}
+
+func loadMp3FromBytes(data []byte) (*mix.Music, error) {
+	rwops, err := sdl.RWFromMem(data)
+	if err != nil {
+		return nil, fmt.Errorf("could not create RWops from bytes: %v", err)
+	}
+
+	music, err := mix.LoadMUSRW(rwops, 0)
+	if err != nil {
+		return nil, fmt.Errorf("could not load MP3 from RWops: %v", err)
+	}
+
+	return music, nil
+}
+
+func playMp3(music *mix.Music) error {
+	if err := music.Play(1); err != nil {
+		return fmt.Errorf("failed to play music: %v", err)
+	}
+
+	// Wait for the audio to finish playing
+	for mix.PlayingMusic() != false {
+		sdl.Delay(100)
+	}
+
+	return nil
+}
+
+func playFloppySound() {
+	music, err := loadMp3FromBytes(floppySound)
+	if err != nil {
+		log.Fatalf("Failed to load floppysound MP3: %s", err)
+	}
+
+	err = playMp3(music)
+	if err != nil {
+		log.Fatalf("Failed to play floppysound MP3: %s", err)
+	}
+	music.Free()
+}
+
 func drawDecrunchEffect(duration time.Duration) {
 	startTime := time.Now()
 	speed := int32(20)
 	barThickness := int32(10) // Adjust this value to change the thickness of the bars
 
 	colors := [][3]uint8{
+		{0, 0, 0}, {255, 255, 255}, {136, 0, 0}, {170, 255, 238},
+		{204, 68, 204}, {0, 204, 85}, {0, 0, 170}, {238, 238, 119},
+		{221, 136, 85}, {102, 68, 0}, {255, 119, 119}, {51, 51, 51},
+		{119, 119, 119}, {170, 255, 102}, {0, 136, 255}, {187, 187, 187},
+		{0, 0, 0}, {255, 255, 255}, {136, 0, 0}, {170, 255, 238},
+		{204, 68, 204}, {0, 204, 85}, {0, 0, 170}, {238, 238, 119},
+		{221, 136, 85}, {102, 68, 0}, {255, 119, 119}, {51, 51, 51},
+		{119, 119, 119}, {170, 255, 102}, {0, 136, 255}, {187, 187, 187},
+		{0, 0, 0}, {255, 255, 255}, {136, 0, 0}, {170, 255, 238},
+		{204, 68, 204}, {0, 204, 85}, {0, 0, 170}, {238, 238, 119},
+		{221, 136, 85}, {102, 68, 0}, {255, 119, 119}, {51, 51, 51},
+		{119, 119, 119}, {170, 255, 102}, {0, 136, 255}, {187, 187, 187},
+		{0, 0, 0}, {255, 255, 255}, {136, 0, 0}, {170, 255, 238},
+		{204, 68, 204}, {0, 204, 85}, {0, 0, 170}, {238, 238, 119},
+		{221, 136, 85}, {102, 68, 0}, {255, 119, 119}, {51, 51, 51},
+		{119, 119, 119}, {170, 255, 102}, {0, 136, 255}, {187, 187, 187},
 		{0, 0, 0}, {255, 255, 255}, {136, 0, 0}, {170, 255, 238},
 		{204, 68, 204}, {0, 204, 85}, {0, 0, 170}, {238, 238, 119},
 		{221, 136, 85}, {102, 68, 0}, {255, 119, 119}, {51, 51, 51},
@@ -706,7 +825,6 @@ func setupBouncingLogo() error {
 
 	return nil
 }
-
 func updateBouncingLogoPosition() {
 	// Calculate the elapsed time
 	elapsed := time.Since(startTime).Seconds()

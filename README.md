@@ -22,6 +22,10 @@ Features:
 
 9. Amiga style graphical decruncher loader 
 
+10. Amiga Kickstart 1.3 insert disk screen
+
+11. Genuine Amiga 500 floppy disk drive loading sound
+
 
 
 Requirements:
