@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	windowWidth   = 1024
-	windowHeight  = 768
+	windowWidth   = 1920
+	windowHeight  = 1200
 	FPS           = 60
 	numStars      = 1000
 	maxTrailLen   = 5
@@ -39,9 +39,10 @@ type Edge struct {
 }
 
 var (
-	renderer *sdl.Renderer
-	window   *sdl.Window
-	err      error
+	renderer   *sdl.Renderer
+	window     *sdl.Window
+	err        error
+	fullscreen bool
 
 	//Cube variables
 	zoomFactor    = 0.1
@@ -106,6 +107,7 @@ var (
 )
 
 func main() {
+	parseCommandLineArgs()
 	err := initSDL()
 	if err != nil {
 		return
@@ -522,6 +524,15 @@ func handleEvents() {
 		}
 	}
 }
+func parseCommandLineArgs() {
+	for _, arg := range os.Args[1:] {
+		if arg == "-fullscreen" {
+			fullscreen = true
+		} else if arg == "-windowed" {
+			fullscreen = false
+		}
+	}
+}
 func initSDL() error {
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		return err
@@ -541,7 +552,11 @@ func initSDL() error {
 	return nil
 }
 func setupDisplay() {
-	window, renderer, err = sdl.CreateWindowAndRenderer(windowWidth, windowHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_BORDERLESS)
+	var flags uint32 = sdl.WINDOW_SHOWN | sdl.WINDOW_BORDERLESS
+	if fullscreen {
+		flags |= sdl.WINDOW_FULLSCREEN_DESKTOP
+	}
+	window, renderer, err = sdl.CreateWindowAndRenderer(windowWidth, windowHeight, flags)
 	if err != nil {
 		_, err := fmt.Fprintf(os.Stderr, "Failed to create window and renderer: %s\n", err)
 		if err != nil {
@@ -550,6 +565,7 @@ func setupDisplay() {
 		os.Exit(1)
 	}
 }
+
 func loadModFromBytes(data []byte) (*mix.Music, error) {
 	rwops, err := sdl.RWFromMem(data)
 	if err != nil {
@@ -566,12 +582,18 @@ func loadModFromBytes(data []byte) (*mix.Music, error) {
 func playMusic() {
 	music, err := loadModFromBytes(comicbakeryMod)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to load music: %s\n", err)
+		_, err := fmt.Fprintf(os.Stderr, "Failed to load music: %s\n", err)
+		if err != nil {
+			return
+		}
 		os.Exit(1)
 	}
 
 	if err := music.Play(-1); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to play music: %s\n", err)
+		_, err := fmt.Fprintf(os.Stderr, "Failed to play music: %s\n", err)
+		if err != nil {
+			return
+		}
 		os.Exit(1)
 	}
 }
