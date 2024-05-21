@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	windowWidth   = 1920
-	windowHeight  = 1200
+	//windowWidth   = 1920
+	//windowHeight  = 1200
 	FPS           = 60
 	numStars      = 1000
 	maxTrailLen   = 5
@@ -39,10 +39,12 @@ type Edge struct {
 }
 
 var (
-	renderer   *sdl.Renderer
-	window     *sdl.Window
-	err        error
-	fullscreen bool
+	renderer     *sdl.Renderer
+	window       *sdl.Window
+	err          error
+	fullscreen   bool
+	windowWidth  int32 = 1024
+	windowHeight int32 = 768
 
 	//Cube variables
 	zoomFactor    = 0.1
@@ -223,8 +225,8 @@ func rotatePoint(point Point3D, angle float64) Point3D {
 func projectPoint(point Point3D) Point3D {
 	distance := 3.0
 	factor := distance / (distance + point.z) * zoomFactor
-	x := point.x * factor * windowWidth / 2
-	y := point.y * factor * windowHeight / 2
+	x := point.x * factor * float64(windowWidth) / 2
+	y := point.y * factor * float64(windowHeight) / 2
 	return Point3D{x, y, point.z}
 }
 func fillPolygon(renderer *sdl.Renderer, points []sdl.Point, indices []int) {
@@ -274,8 +276,8 @@ func drawCube(angle float64) {
 		rotated := rotatePoint(vertex, angle)
 		projected := projectPoint(rotated)
 		projectedPoints[i] = sdl.Point{
-			X: int32(projected.x + windowWidth/2),
-			Y: int32(projected.y + windowHeight/2),
+			X: int32(projected.x + float64(windowWidth)/2),
+			Y: int32(projected.y + float64(windowHeight)/2),
 		}
 	}
 
@@ -351,8 +353,8 @@ func drawStarfield() {
 		}
 
 		factor := 3.0 / stars[i].z
-		x := stars[i].x * factor * windowWidth / 2
-		y := stars[i].y * factor * windowHeight / 2
+		x := stars[i].x * factor * float64(windowWidth) / 2
+		y := stars[i].y * factor * float64(windowHeight) / 2
 
 		if len(stars[i].trail) >= maxTrailLen {
 			stars[i].trail = stars[i].trail[1:]
@@ -431,7 +433,7 @@ func createBarTextures() {
 	}
 
 	for i := 0; i < numBars; i++ {
-		barOffsets[i] = i * (windowHeight / numBars)
+		barOffsets[i] = i * (int(windowHeight) / numBars)
 	}
 }
 func drawCopperBars(elapsedTime float64) {
@@ -464,7 +466,7 @@ func drawScrollText(text string, posX float64) {
 	textLength := len(text)
 	totalTextWidth := textLength * displayWidth
 
-	for i := 0; i <= windowWidth/displayWidth+1; i++ {
+	for i := 0; i <= int(windowWidth)/displayWidth+1; i++ {
 		for j, c := range text {
 			charPos, ok := charMap[c]
 			if !ok {
@@ -551,12 +553,23 @@ func initSDL() error {
 	}
 	return nil
 }
+
 func setupDisplay() {
 	var flags uint32 = sdl.WINDOW_SHOWN | sdl.WINDOW_BORDERLESS
 	if fullscreen {
 		flags |= sdl.WINDOW_FULLSCREEN_DESKTOP
+		dm, err := sdl.GetCurrentDisplayMode(0)
+		if err != nil {
+			log.Fatalf("Failed to get display mode: %s", err)
+		}
+		windowWidth = dm.W
+		windowHeight = dm.H
+	} else {
+		windowWidth = 1024
+		windowHeight = 768
 	}
-	window, renderer, err = sdl.CreateWindowAndRenderer(windowWidth, windowHeight, flags)
+
+	window, renderer, err = sdl.CreateWindowAndRenderer(int32(int(windowWidth)), int32(int(windowHeight)), flags)
 	if err != nil {
 		_, err := fmt.Fprintf(os.Stderr, "Failed to create window and renderer: %s\n", err)
 		if err != nil {
@@ -636,7 +649,7 @@ func setupBouncingLogo() error {
 
 	// Initial position and target position
 	posY = -int(imageHeight)
-	targetY = (windowHeight - int(imageHeight)) / 7
+	targetY = (int(windowHeight) - int(imageHeight)) / 7
 
 	return nil
 }
