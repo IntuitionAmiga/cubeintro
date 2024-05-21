@@ -13,8 +13,6 @@ import (
 )
 
 const (
-	//windowWidth   = 1920
-	//windowHeight  = 1200
 	FPS           = 60
 	numStars      = 1000
 	maxTrailLen   = 5
@@ -328,17 +326,18 @@ func updateZoomLevel() {
 }
 func initStars() {
 	// Initialize stars
-	rand.Seed(time.Now().UnixNano())
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i := 0; i < numStars; i++ {
 		stars = append(stars, Star{
-			x:     rand.Float64()*2 - 1,
-			y:     rand.Float64()*2 - 1,
-			z:     rand.Float64()*2 - 1,
-			speed: rand.Float64()*0.05 + 0.01,
+			x:     rng.Float64()*2 - 1,
+			y:     rng.Float64()*2 - 1,
+			z:     rng.Float64()*2 - 1,
+			speed: rng.Float64()*0.05 + 0.01,
 			trail: make([]Point3D, 0, maxTrailLen),
 		})
 	}
 }
+
 func drawStarfield() {
 	for i := range stars {
 		stars[i].z -= stars[i].speed
