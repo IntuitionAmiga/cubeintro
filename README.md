@@ -26,6 +26,7 @@ Features:
 
 11. Genuine Amiga 500 floppy disk drive loading sound
 
+12. Colour cycling rainbow/copper line effect
 
 
 Requirements:

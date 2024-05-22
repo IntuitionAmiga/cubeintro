@@ -176,6 +176,7 @@ func main() {
 	// Main loop
 	startTime = time.Now()
 	for running {
+		frameStart := time.Now()
 		handleEvents()
 		updateZoomLevel() // Zoom in/out
 
@@ -188,6 +189,7 @@ func main() {
 			return
 		}
 
+		drawRainbowLine(50, 200, false)
 		drawStarfield()
 
 		drawCopperBars(time.Since(startTime).Seconds())
@@ -200,8 +202,12 @@ func main() {
 		updateBouncingLogoPosition()
 		drawBouncingLogo()
 
+		drawRainbowLine(windowHeight-50, 200, true)
+
 		renderer.Present()
-		sdl.Delay(1000 / FPS)
+		//sdl.Delay(1000 / FPS)
+		frameTime := time.Since(frameStart)
+		sdl.Delay(uint32(math.Max(0, float64(1000/FPS)-float64(frameTime.Milliseconds()))))
 	}
 }
 
@@ -357,6 +363,55 @@ func drawDecrunchEffect(duration time.Duration) {
 		}
 		renderer.Present()
 		sdl.Delay(16) // Limit frame rate to about 60 FPS
+	}
+}
+
+func drawRainbowLine(y int32, speed int32, reverse bool) {
+	colors := [][3]uint8{
+		{255, 0, 0}, {255, 127, 0}, {255, 255, 0}, {127, 255, 0},
+		{0, 255, 0}, {0, 255, 127}, {0, 255, 255}, {0, 127, 255},
+		{0, 0, 255}, {127, 0, 255}, {255, 0, 255}, {255, 0, 127},
+	}
+
+	numColors := int32(len(colors))
+	lineWidth := windowWidth / numColors
+
+	// Calculate the current time offset for cycling the colors
+	t := int32(time.Since(startTime).Milliseconds() / int64(speed))
+	if reverse {
+		t = -t
+	}
+
+	for i := int32(0); i < windowWidth; i++ {
+		// Calculate the fractional position within the current color segment
+		pos := float32(i%lineWidth) / float32(lineWidth)
+
+		// Get the current and next color index, adjusted to cycle in the correct direction
+		colorIndex := (i/lineWidth + t) % numColors
+		if colorIndex < 0 {
+			colorIndex += numColors
+		}
+		nextColorIndex := (colorIndex + 1) % numColors
+
+		// Interpolate between the current and next color
+		color := interpolateColor(colors[colorIndex], colors[nextColorIndex], pos)
+
+		err := renderer.SetDrawColor(color[0], color[1], color[2], 255)
+		if err != nil {
+			return
+		}
+		err = renderer.DrawLine(i, y, i, y+5)
+		if err != nil {
+			return
+		}
+	}
+}
+
+func interpolateColor(c1, c2 [3]uint8, t float32) [3]uint8 {
+	return [3]uint8{
+		uint8(float32(c1[0])*(1-t) + float32(c2[0])*t),
+		uint8(float32(c1[1])*(1-t) + float32(c2[1])*t),
+		uint8(float32(c1[2])*(1-t) + float32(c2[2])*t),
 	}
 }
 
@@ -641,14 +696,12 @@ func drawScrollText(text string, posX float64) {
 			srcRect := sdl.Rect{X: int32(charPos[0] * fontWidth), Y: int32(charPos[1] * fontHeight), W: fontWidth, H: fontHeight}
 			offsetY := int32(20 * math.Sin(float64(x)/100))
 
-			// Draw the original text
 			dstRect := sdl.Rect{X: x, Y: windowHeight/2 + offsetY, W: displayWidth, H: displayHeight}
 			err := renderer.Copy(fontTexture, &srcRect, &dstRect)
 			if err != nil {
 				return
 			}
 
-			// Draw the mirrored text
 			mirroredOffsetY := int32(-20 * math.Sin(float64(x)/100))
 			mirroredDstRect := sdl.Rect{X: x, Y: windowHeight/2 + displayHeight + mirroredOffsetY, W: displayWidth, H: displayHeight}
 			err = renderer.CopyEx(fontTexture, &srcRect, &mirroredDstRect, 0, nil, sdl.FLIP_VERTICAL)
@@ -658,9 +711,9 @@ func drawScrollText(text string, posX float64) {
 		}
 	}
 }
+
 func updateScrollTextPosition() {
-	// Update the position of the scrolling text
-	scrollPosX -= scrollSpeed
+	scrollPosX -= scrollSpeed * (60.0 / FPS)
 	if scrollPosX <= -float64(len(scrollText)*displayWidth) {
 		scrollPosX += float64(len(scrollText) * displayWidth)
 	}
