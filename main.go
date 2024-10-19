@@ -49,7 +49,6 @@ var (
 	zoomFactor    = 0.1
 	targetZoom    = 0.6
 	zoomStep      = 0.002
-	zoomReversed  = false
 	rotationAngle = 0.0
 	cubeVertices  = []Point3D{
 		{1, 1, -1}, {1, -1, -1}, {-1, -1, -1}, {-1, 1, -1},
@@ -81,7 +80,7 @@ var (
 	stars []Star
 
 	// Scrolltext variables
-	scrollText  = "..:INTUITION PRESENTS:..    \"I FEEL 16 AGAIN!\"    ..:PRESS THE UP AND DOWN KEYS TO ZOOM THE CUBE IN AND OUT:..    ..:\"-WIN\" ARGUMENT ON COMMANDLINE TO RUN IN WINDOWED MODE:..    ..:\"-WIN WIDTH HEIGHT\" TO SET WINDOW SIZE:..    ..:PRESS Q OR ESC TO QUIT:..    ..:ORIGINAL COMIC BAKERY MUSIC FOR C64 BY MARTIN GALWAY IN 1984...     ..:SID TO PROTRACKER CONVERSION FOR AMIGA BY H0FFMAN (DREAMFISH OF TRSI) IN 1994:..    ..:GOLANG CODE BY INTUITION IN 2024:..    ..:FONT GRAPHICS BY UNKNOWN:..    ..:GREETS TO KARLOS AND GADGETMASTER!!!:..          "
+	scrollText  = "..:INTUITION PRESENTS:..    \"I FEEL 16 AGAIN!\"    ..:PRESS THE UP AND DOWN KEYS TO ZOOM THE CUBE IN AND OUT:..    ..:\"-WIN\" ARGUMENT ON COMMANDLINE TO RUN IN WINDOWED MODE:..    ..:\"-WIN WIDTH HEIGHT\" TO SET WINDOW SIZE:..  ..:\"-DEBUG\" TO SHOW FPS:..  ..:PRESS Q OR ESC TO QUIT:..    ..:ORIGINAL COMIC BAKERY MUSIC FOR C64 BY MARTIN GALWAY IN 1984...     ..:SID TO PROTRACKER CONVERSION FOR AMIGA BY H0FFMAN (DREAMFISH OF TRSI) IN 1994:..    ..:GOLANG CODE BY INTUITION IN 2024:..    ..:FONT GRAPHICS BY UNKNOWN:..    ..:GREETS TO KARLOS AND GADGETMASTER!!!:..          "
 	scrollPosX  = float64(windowWidth)
 	fontTexture *sdl.Texture
 	charMap     = map[rune][2]int{
@@ -105,6 +104,8 @@ var (
 	// Loop control
 	running   = true
 	startTime = time.Now()
+
+	debug bool
 )
 
 func main() {
@@ -119,7 +120,9 @@ func main() {
 
 	fmt.Println("Cubetro by Intuition (2024)\n")
 	fmt.Println("\"-win\" argument on commandline to run in windowed mode")
-	fmt.Println("\"-win width height\" to set window size (default 1024x768)\n")
+	fmt.Println("\"-win width height\" to set window size (default 1024x768)")
+	fmt.Println("\"-debug\" to show FPS\n")
+
 	setupDisplay()
 	defer func(window *sdl.Window) {
 		err := window.Destroy()
@@ -173,8 +176,13 @@ func main() {
 	// Pre-render the copper bars into textures
 	createBarTextures()
 
+	var frameCount int
+	var fps float64
+	var lastTime time.Time
+
 	// Main loop
 	startTime = time.Now()
+	lastTime = startTime
 	for running {
 		frameStart := time.Now()
 		handleEvents()
@@ -205,7 +213,20 @@ func main() {
 		drawRainbowLine(windowHeight-50, 200, true)
 
 		renderer.Present()
-		//sdl.Delay(1000 / FPS)
+
+		// Calculate FPS
+		frameCount++
+		elapsed := time.Since(lastTime).Seconds()
+		if elapsed >= 1.0 {
+			fps = float64(frameCount) / elapsed
+			frameCount = 0
+			lastTime = time.Now()
+			if debug {
+				fmt.Printf("FPS: %.2f\n", fps)
+				// Move cursor back up one line
+				fmt.Print("\033[A")
+			}
+		}
 		frameTime := time.Since(frameStart)
 		sdl.Delay(uint32(math.Max(0, float64(1000/FPS)-float64(frameTime.Milliseconds()))))
 	}
@@ -528,10 +549,12 @@ func updateZoomLevel() {
 		zoomFactor += zoomStep
 		if zoomFactor > targetZoom {
 			zoomFactor = targetZoom
-			if !zoomReversed {
-				targetZoom = 0.2
-				zoomReversed = true
-			}
+			//if !zoomReversed {
+			//	targetZoom = 0.2
+			//	zoomReversed = true
+			//}
+			// Optimized Implementation
+			zoomFactor += zoomStep
 		}
 	} else if zoomFactor > targetZoom {
 		zoomFactor -= zoomStep
@@ -741,22 +764,25 @@ func handleEvents() {
 }
 func parseCommandLineArgs() {
 	fullscreen = true // Default to fullscreen
-	for i, arg := range os.Args[1:] {
+	for i := 1; i < len(os.Args); i++ {
+		arg := os.Args[i]
 		if arg == "-win" {
 			fullscreen = false
 			// Check if custom width and height are provided
-			if len(os.Args) > i+3 {
-				if w, err := strconv.Atoi(os.Args[i+2]); err == nil {
+			if len(os.Args) > i+2 {
+				if w, err := strconv.Atoi(os.Args[i+1]); err == nil {
 					windowWidth = int32(w)
 				}
-				if h, err := strconv.Atoi(os.Args[i+3]); err == nil {
+				if h, err := strconv.Atoi(os.Args[i+2]); err == nil {
 					windowHeight = int32(h)
 				}
+				i += 2 // Skip the width and height arguments
 			} else {
 				windowWidth = 1024
 				windowHeight = 768
 			}
-			break
+		} else if arg == "-debug" {
+			debug = true
 		}
 	}
 }
@@ -952,5 +978,5 @@ func introQuit() {
 		sdl.Delay(400 / FPS)
 	}
 	running = false
-	fmt.Println("\nThanks for watching...\n")
+	fmt.Println("\n\nThanks for watching...\n")
 }
