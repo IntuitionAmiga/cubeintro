@@ -1,5 +1,7 @@
 ![Golang crack intro](cubeintro.png "cubeintro")
 
+https://youtu.be/7lep552Nb04 Watch it here if you CBA building it. 😊
+
 Got bored and made an oldskool crack intro.
 
 Features:
